@@ -13,10 +13,12 @@ def hw1_nb_test(candidates, total_documents, unique_words, wordProbs):
 		nb.func_c_k_w('trump','country'), ' c(trump,president) ',
 		nb.func_c_k_w('trump','president'))
 
-	print('Clinton p(clinton)', calc_p_k(candidates,'clinton',total_documents),
-		' p(clinton,president) ', calc_p_k_w(candidates,'clinton','president', unique_words),
-		' p(clinton,country) ', calc_p_k_w(candidates,'clinton','country', unique_words))
-	print('Trump p(trump)', calc_p_k(candidates,'trump',total_documents))
+	print('Clinton p(clinton)', nb.p_k['clinton'],
+		' p(clinton,president) ', nb.func_calc_p_k_w('clinton','president'),
+		' p(clinton,country) ', nb.func_calc_p_k_w('clinton','country'))
+	print('Trump p(trump)', nb.p_k['trump'],
+		' p(trump,president) ', nb.func_calc_p_k_w('trump','president'),
+		' p(trump,country) ', nb.func_calc_p_k_w('trump','country'))
 
 
 	# word tokenizer, removes punctuation
