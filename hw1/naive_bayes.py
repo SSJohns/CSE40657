@@ -17,47 +17,58 @@ class Naive_Bayes:
 
 		for whom in self.candidates:
 			self.p_k_w[whom] = dict()
-
+		self.sum_c_k = 0
 		self.func_c_k()
-		self.sum_c_k = self.func_sum_c_k()
 		self.func_calc_p_k()
 
 
 	def func_c_k(self):
 		for whom in self.candidates:
 			self.c_k[whom] = self.candidates[whom][0]
-
-	def func_sum_c_k(self):
-		sum = 0
-		for value in self.c_k.values():
-			sum = sum + value
-		return sum
+			self.sum_c_k += self.candidates[whom][0]
 
 	def func_c_k_w(self, whom, word):
 		if word not in self.candidates[whom][2]:
 			return 0
 		return self.candidates[whom][2][word]
 
-	def func_sum_c_k_w(self, word):
-		sum = 0
-		if word in self.sum_c_k_w:
-			return self.sum_c_k_w[word]
-		for whom in self.candidates:
-			sum = sum + self.func_c_k_w(whom, word)
-		self.sum_c_k_w[word] = sum
-		return sum
-
 	def func_calc_p_k(self):
 		summed = 0
+		print('p(k):')
 		for whom in self.candidates:
-			self.p_k[whom] = self.candidates[whom][0]/float(self.sum_c_k)
+			self.p_k[whom] = self.candidates[whom][0]/float(self.total_documents)
+			print('p(k)',whom,':',self.p_k[whom])
 			summed = summed + self.p_k[whom]
 		self.sum_p_k = summed
+
+	def func_p_k_given_d(self, whom, doc):
+		sum_doc = np.log(self.p_k[whom])
+		for word in doc:
+			sum_doc += np.log(self.func_calc_p_k_w(whom,word))
+		return sum_doc
+
+	def func_speak_given_state(self, doc):
+		""" p(k|d)"""
+		values = {}
+		min_val = -1111111111111
+		for speaker in self.candidates:
+			check = self.func_p_k_given_d(speaker, doc)
+			values.update({speaker: check})
+		mav_value = max(values.values())
+		prob_values = {}
+		for val in values:
+			prob_values.update({val:values[val] + mav_value})
+		sum_vals = sum(prob_values.values())
+		values = {}
+		for speak, valss in prob_values.items():
+			# print(speak , valss/sum_vals)
+			values.update({speak:valss/sum_vals})
+		return values
 
 	def func_calc_p_k_w(self, whom, word):
 		if word in self.p_k_w[whom]:
 			return self.p_k_w[whom][word]
-		self.p_k_w[whom][word] = (self.func_c_k_w(whom, word) + 0.02)/float(self.func_sum_c_k_w(word) + len(self.unique_words)*0.02)
+		self.p_k_w[whom][word] = (self.func_c_k_w(whom, word) + 0.02)/float(self.candidates[whom][1] + self.unique_words*0.02)
 		return self.p_k_w[whom][word]
 
 	def func_sum_log_p_w_k(self, doc):
@@ -65,7 +76,7 @@ class Naive_Bayes:
 		sum_logs = 0
 		for word in doc:
 			for candidate in self.candidates:
-				sum_logs = sum_logs + self.func_calc_p_k_w(candidate, word)
+				sum_logs = sum_logs + np.log(self.func_calc_p_k_w(candidate, word))
 		return sum_logs
 
 	def func_sum__e_logs_p_k_plus_sum_log_p_w_k(self, word, doc, total):
@@ -95,20 +106,14 @@ class Naive_Bayes:
 			sum_logs = np.log(sum_p_k) + sum_log_p_k_w # - self.func_sum__e_logs_p_k_plus_sum_log_p_w_k(word, doc, total)
 			# sum_logs = np.exp(sum_logs)
 			temp_p_k_d.update({whom: sum_logs})
+			# temp_p_k_d = self.func_speak_given_state(doc)
+			# for whom in self.candidates:
+			# 	probablity_speaking[whom] = temp_p_k_d[whom]
+			# # input('jskljkldsfjl')
+			# # import ipdb; ipdb.set_trace()
+			# for whom in temp_p_k_d:
+			# 	p_k_d = scipy.misc.logsumexp(temp_p_k_d[whom])
+			# 	temp_p_k_d.update({whom: p_k_d})
+		winner = max(temp_p_k_d, key=temp_p_k_d.get)
 
-		for whom in self.candidates:
-			probablity_speaking[whom] = np.exp(temp_p_k_d[whom])
-
-		for whom in temp_p_k_d:
-			p_k_d = scipy.misc.logsumexp(temp_p_k_d[whom])
-			temp_p_k_d.update({whom: p_k_d})
-
-		max = np.finfo('d').min
-		winner = []
-		for whom in temp_p_k_d:
-			p_k_d = temp_p_k_d[whom]
-			# print("For candidate: ", whom, " naive_bayes for doc is ", p_k_d)
-			if p_k_d > max:
-				max = p_k_d
-				winner = [whom, p_k_d]
 		return winner, probablity_speaking

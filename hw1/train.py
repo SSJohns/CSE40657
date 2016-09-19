@@ -10,7 +10,7 @@ def train(training_file):
 	candidates = {}
 	file = open(training_file, 'r')
 	total_documents = 0
-	unique_words = Counter()
+	unique_words = 0
 	wordProbs = dict()
 
 	# word tokenizer, removes punctuation
@@ -39,11 +39,11 @@ def train(training_file):
 			past_counter = candidates[line[0]][2]
 			total_documents = total_documents + 1
 			candidates[line[0]][2] = Counter(line_fill) + past_counter
-			unique_words = unique_words + Counter(line_fill)
+			unique_words = unique_words + len(Counter(line_fill))
 			candidates[line[0]][1] = candidates[line[0]][1] + len(line_fill)
 		else:
 			total_documents = total_documents + 1
-			unique_words = unique_words + Counter(line_fill)
+			unique_words = unique_words + len(Counter(line_fill))
 			candidates.update({line[0]:[1, len(line_fill), Counter(line_fill)]})
 			wordProbs[line[0]] = dict()
 
