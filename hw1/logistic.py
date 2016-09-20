@@ -87,8 +87,8 @@ class Logistic:
 				if word in self.lamb_doll_word[cat]:
 					# print(cat, word, self.lamb_doll_word[cat][word])
 					sum_p_k_w += self.lamb_doll_word[cat][word]
-				else:
-					self.lamb_doll_word[cat][word] = 0.01
+				# else:
+				# 	self.lamb_doll_word[cat][word] = 0.0
 			p_k_d[cat] = sum_p_k_w
 		sum_val = 0
 		for key, val in p_k_d.items():
