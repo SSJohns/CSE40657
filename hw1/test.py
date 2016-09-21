@@ -66,12 +66,20 @@ def hw1_nb_test(candidates, total_documents, unique_words, wordProbs):
 			value_total = value_total + 1
 			# print("Winner candidate: ", winner[0], "Answer: ", dev_file[0], " naive_bayes for doc is ", winner[1])
 		print('Accuracy is ', value_correct/float(value_total))
+	print('Choices: used smoothing to account for all the missing words. This caused problems when solving for perry')
+	print('But it was solved when I used 0 as the <unk> value. Also removed stop words and lemmatized words to catch')
+	print('multiple words that would have been classed differently had I not.')
 
 def hw1_logistic_test(candidates, total_documents, unique_words, wordProbs):
+	print('\n\n')
 	print("--------------------------------------------------------------")
 	print("--------------------------------------------------------------")
 	print("--------------------Logistic Regression-----------------------")
 	print("--------------------------------------------------------------")
 	print("--------------------------------------------------------------")
 	lg = Logistic(candidates, unique_words)
-	lg.train('hw1-data/train')
+	lg.train()
+
+	print('Choices: used smoothing to account for all the missing words. Randomly shuffled sentences when')
+	print('when training after advice which helped me get over 50 percent at times.')
+	print('It seemed to work best with a learning rate between .85-.9 and around 15 iterations.')
