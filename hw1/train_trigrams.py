@@ -47,11 +47,26 @@ def train(training_file):
 			candidates.update({line[0]:[1, len(line_fill), Counter(line_fill)]})
 			wordProbs[line[0]] = dict()
 
+		# add bigrams
+		if len(line_fill) > 2:
+			firstWord = line_fill[0]
+			secondWord = line_fill[1]
+			for word in line_fill[2:]:
+				trigram = firstWord + ' ' + secondWord + ' '+ word
+
+				past_counter = candidates[line[0]][2]
+				candidates[line[0]][2] = Counter(trigram) + past_counter
+				unique_words = unique_words + len(Counter(line_fill))
+				candidates[line[0]][1] = candidates[line[0]][1] + 1
+
+				firstWord = secondWord
+				secondWord = word
+
 	for candidate in candidates:
 		candidates[candidate][2] = candidates[candidate][2] + Counter({'unk':0})
 		for word in candidates[candidate][2]:
 			wordProbs[candidate][word] = candidates[candidate][2][word] / len(candidates[candidate][2])
 
 	file.close()
-	pickle.dump([candidates,total_documents,unique_words,wordProbs], open( "save.p", "wb" ))
+	pickle.dump([candidates,total_documents,unique_words,wordProbs], open( "save_trigram.p", "wb" ))
 	return candidates, total_documents, unique_words, wordProbs

@@ -31,9 +31,6 @@ def train(training_file):
 			if word not in stop:
 				line_fill.append( wordnet_lemmatizer.lemmatize(word) )
 
-		# for word in line_split:
-		# 	line_fill.append(word)
-
 		if line[0] in candidates:
 			candidates[line[0]][0] = candidates[line[0]][0] + 1
 			past_counter = candidates[line[0]][2]
@@ -47,11 +44,41 @@ def train(training_file):
 			candidates.update({line[0]:[1, len(line_fill), Counter(line_fill)]})
 			wordProbs[line[0]] = dict()
 
+		# add bigrams
+		# print(line_fill)
+		if len(line_fill) > 1:
+			if line[0] in candidates:
+				prevWord = line_fill[0]
+				total_documents = total_documents + 1
+				unique_words = unique_words + len(Counter(line_fill))
+				candidates[line[0]][0] = candidates[line[0]][0] + 1
+
+				for word in line_fill[1:]:
+					bigram = prevWord + ' ' + word
+
+					past_counter = candidates[line[0]][2]
+					candidates[line[0]][2] = Counter(bigram) + past_counter
+					candidates[line[0]][1] = candidates[line[0]][1] + 1
+
+					prevWord = word
+			else:
+				candidates.update({line[0]:[1, 0, Counter()]})
+				prevWord = line_fill[0]
+				wordProbs[line[0]] = dict()
+				for word in line_fill[1:]:
+					bigram = prevWord + ' ' + word
+
+					past_counter = candidates[line[0]][2]
+					candidates[line[0]][2] = Counter(bigram) + past_counter
+					candidates[line[0]][1] = candidates[line[0]][1] + 1
+
+					prevWord = word
+
 	for candidate in candidates:
 		candidates[candidate][2] = candidates[candidate][2] + Counter({'unk':0})
 		for word in candidates[candidate][2]:
 			wordProbs[candidate][word] = candidates[candidate][2][word] / len(candidates[candidate][2])
 
 	file.close()
-	pickle.dump([candidates,total_documents,unique_words,wordProbs], open( "save.p", "wb" ))
+	pickle.dump([candidates,total_documents,unique_words,wordProbs], open( "save_bigram.p", "wb" ))
 	return candidates, total_documents, unique_words, wordProbs

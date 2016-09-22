@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 
 
-class Naive_Bayes:
+class Naive_Bayes_Bigrams:
 	def __init__(self, candidates, unique_words, wordProbs, total_documents):
 		self.wordProbs = wordProbs
 		self.candidates = candidates
@@ -97,6 +97,14 @@ class Naive_Bayes:
 			sum_log_p_k_w = 0.0
 			for word in doc:
 				sum_log_p_k_w = sum_log_p_k_w + np.log(self.func_calc_p_k_w(whom, word))
+
+			if len(doc) > 1:
+				prevWord = doc[0]
+				for word in doc[1:]:
+					bigram = prevWord + " " + word
+					sum_log_p_k_w = sum_log_p_k_w + np.log(self.func_calc_p_k_w(whom, bigram))
+					prevWord = word
+
 			sum_logs = np.log(sum_p_k) + sum_log_p_k_w
 			temp_p_k_d.update({whom: sum_logs})
 		winner = max(temp_p_k_d, key=temp_p_k_d.get)
