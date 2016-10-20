@@ -122,7 +122,7 @@ class Language_Model:
 			return (1-self.lambda_u(phrase))*self.phrase_helper(phrase[1:])
 		elif len(phrase) == 2:
 			# print(self.c_u[phrase[0]], float(self.c_u_dot[phrase[0]]), (1-self.lambda_u(phrase) ) )
-			return self.lambda_u(phrase)*(self.c_u[phrase]/float(self.c_u_dot[1][phrase[0]])) + (1-self.lambda_u(phrase))
+			return self.lambda_u(phrase)*(self.c_u[phrase]/float(self.c_u_dot[1][phrase])) + (1-self.lambda_u(phrase))
 		else:
 			# print('-----------------------------')
 			# print(phrase)
