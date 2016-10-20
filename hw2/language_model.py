@@ -16,12 +16,12 @@ def window(seq, n=2):
 
 def window_next(seq, n=2):
 	table = window(seq,n)
-	t_rand = dict()
+	t_rand = list()
 	feats = list()
 	feats.extend(table)
 	# print(feats)
 	for i in range(len(feats)-1):
-		t_rand.update({ feats[i]: feats[i+1][len(feats[i+1])-1] })
+		t_rand.append( ( feats[i], feats[i+1][len(feats[i+1])-1] ) )
 	# t_rand.update( { feats[len(feats) -1]:'\n' })
 	# print(t_rand)
 	return t_rand
@@ -43,6 +43,7 @@ class Language_Model:
 		self.c_u_dot = collections.defaultdict( lambda: collections.defaultdict(lambda: 0.0000000000000000000001) )
 		self.lambda_value = dict()
 		self.p_w = dict()
+		self.count = 0
 
 		self.training()
 
@@ -56,7 +57,7 @@ class Language_Model:
 	def gen_features(self,words, n_grams):
 		feats = []  # always-on feature
 		feats.extend(words) # unigram features
-
+		self.count += len(words)
 		# grabs all indivdual words
 		for a in words:
 			self.unigram.update(a)
@@ -68,11 +69,11 @@ class Language_Model:
 		# adds these to our models
 		for feat in feats:
 			# import ipdb; ipdb.set_trace()
-			self.c_uw[len(feat)].update(feat)
+			# self.c_uw[len(feat)].update(feat)
 			if len(feat) <= 1:
-				self.c_u_dot[len(feat)][feat] +=1
+				self.c_u_dot[len(feat)-1][''] +=1
 			else:
-				self.c_u_dot[len(feat)][ feat[0:len(feat)] ] +=1
+				self.c_u_dot[len(feat)-1][ feat[0:len(feat)-1] ] +=1
 		self.c_u.update(feats)
 		self.vocab.update(feats)
 
@@ -82,10 +83,12 @@ class Language_Model:
 		for a in self.unigram:
 			# import ipdb; ipdb.set_trace()
 			new_val = u+(a,)
+			# print('nr',new_val)
+			# print(new_val in self.c_u_dot[len(new_val)])
 			if new_val in self.c_u_dot[len(new_val)]:
-				sum += self.c_u_dot[len(new_val)][new_val]
+				sum += 1
 		# return len(self.c_u_dot[len(new_val)].values())
-		# print(sum, u, self.unigram)
+		# print(sum, u)
 		return sum
 
 
@@ -98,41 +101,40 @@ class Language_Model:
 			return self.lambda_value[u]
 		# import ipdb; ipdb.set_trace()
 		# print(u, self.c_u[u], len(self.c_u_dot[len(u)]))
-		# nxt= set()
-		# for n in self.c_uw[len(u)+1]:
-		# 	# import ipdb; ipdb.set_trace()
-		# 	# print(n[-1:], u)
-		# 	if n[-1:] == u[-1:]:
-		# 		count += 1
-		# 		nxt.update(n[-1])
-		# if count != 0:
-		# 	self.lambda_value[u] = count / (count + len(nxt)+1)
-		# else:
-			# c_u_dot is a dict of n lengths with a list of words
-			# in those lengths and how many times weve seen them before
-		self.lambda_value[u] = self.c_u_dot[len(u)][u]/( self.c_u_dot[len(u)][u] + self.n_r(u) ) # [len(u)][u[-1:]]
+		# c_u_dot is a dict of n lengths with a list of words
+		# in those lengths and how many times weve seen them before
+		# print('c u*', self.c_u_dot[len(u)][u],self.c_u_dot[len(u)][u])
+		# print('nr', self.n_r(u))
+		self.lambda_value[u] = self.c_u_dot[len(u)][u]/float( self.c_u_dot[len(u)][u] + self.n_r(u) ) # [len(u)][u[-1:]]
+		if self.lambda_value[u] <= 0.00000001:
+			import ipdb; ipdb.set_trace()
 		return self.lambda_value[u]
 
 	# recursively find our prob values
 	def phrase_helper(self, phrase):
 		# print(phrase)
-		if phrase[0] == '🐟':
-			if len(phrase) == 1:
-				return 0
-			return (1-self.lambda_u(phrase))*self.phrase_helper(phrase[1:])
-		elif len(phrase) == 2:
+		# if phrase[0] == '🐟':
+		# 	if len(phrase) == 1:
+		# 		return 0
+		# 	return (1-self.lambda_u(phrase[:-1]))*self.phrase_helper(phrase[1:])
+		if len(phrase) == 1:
 			# print(self.c_u[phrase[0]], float(self.c_u_dot[phrase[0]]), (1-self.lambda_u(phrase) ) )
-			return self.lambda_u(phrase)*(self.c_u[phrase]/float(self.c_u_dot[1][phrase])) + (1-self.lambda_u(phrase))
-		else:
-			# print('-----------------------------')
+			# print('-------------- SINGLE---------------')
 			# print(phrase)
-			# print(phrase[0])
-			# print('cu',self.c_u[phrase])
-			# print('u*',self.c_u_dot[phrase[0]])
-			# print('lamb: ', self.lambda_u(phrase))
-			# print('lamb: ', self.lambda_u(phrase[0]))
+			# print(phrase)
 			# print('lamb minus:',(1-self.lambda_u(phrase)))
-			self.p_w[phrase] = self.lambda_u(phrase)*(self.c_u[phrase]/float( self.c_u_dot[len(phrase)][phrase[:-1]] )) + ( (1-self.lambda_u(phrase))*self.phrase_helper(phrase[1:]) )
+			div = self.count # self.c_u_dot[1][phrase[0]])
+			lambda_val = self.c_u_dot[len(phrase)-1]['']/float( self.c_u_dot[len(phrase)-1][''] + self.n_r(phrase[-1:]) )
+			# print('lamb: ', lambda_val)
+			return lambda_val*(self.c_u[phrase[0]]/float( div )) + (1-lambda_val)*1/(len(self.vocab)+1)
+		else:
+			# print('--------- DOUBLE --------------------')
+			# print(phrase)
+			# print(phrase[:-1])
+			# print('cu',self.c_u[phrase])
+			# print('lamb: ', self.lambda_u(phrase))
+			# print('lamb minus:',(1-self.lambda_u(phrase)))
+			self.p_w[phrase] = self.lambda_u(phrase[-1:])*(self.c_u[phrase]/float( self.c_u_dot[len(phrase)-1][phrase[-1:]] )) + ( (1.-self.lambda_u(phrase[-1:]))*self.phrase_helper(phrase[1:]) )
 			# print(self.p_w[phrase])
 			return self.p_w[phrase]
 
@@ -140,19 +142,23 @@ class Language_Model:
 	# check if they are the next value
 	def phrase_find(self, phrase):
 		probs = dict()
+		# if phrase[-1:] in self.un:
+		# 	for u in self.un[phrase[-1:]]:
+		# 		probs.update({u:self.phrase_helper(phrase+(u,))})
+		# else:
 		for u in self.unigram:
 			probs.update({u:self.phrase_helper(phrase+(u,))})
 		return max(probs, key=probs.get)
 
 	# training
-	def train_phrases(self, gram_model):
-		for phrase in self.vocab:
-			checks = dict()
-			for j in range(2, gram_model):
-				phrase = '🐟'+phrase
-			checks.update(window_next(phrase, gram_model-1))
-			for ch in checks:
-				self.phrase_find(ch)
+	# def train_phrases(self, gram_model):
+	# 	for phrase in self.vocab:
+	# 		checks = dict()
+	# 		for j in range(2, gram_model):
+	# 			phrase = '🐟'+phrase
+	# 		checks.update(window_next(phrase, gram_model-1))
+	# 		for ch in checks:
+	# 			self.phrase_find(ch)
 
 	# check our training model
 	def test_phrases(self, gram_model):
@@ -160,22 +166,23 @@ class Language_Model:
 		guesses = 0
 		# random.shuffle(self.dev)
 		for phrase in self.test:
-			checks = dict()
-			phrase = '🐟'+phrase+'🐟'
-			checks.update(window_next(phrase, gram_model-1))
+			checks = list()
+			for j in range(2, gram_model+1):
+				phrase = '🐟'+phrase
+			checks.extend(window_next(phrase, gram_model-1)) # collision
 			for ch in checks:
-				a = self.phrase_find(ch)
-				print(a, "guessed, answer is:", checks[ch])
+				a = self.phrase_find(ch[0])
+				# print(a, "guessed, answer is:", ch[1])
 				# import ipdb; ipdb.set_trace()
-				if a == checks[ch]:
+				if a == ch[1]:
 					correct += 1
 				guesses += 1
-				print(correct/guesses)
-		print("For Dev Accuracy is", correct/float(guesses) )
+				# print(correct/guesses)
+		print("For Test Accuracy is", correct/float(guesses) )
 
 	def training(self):
 		### Collect counts
-		gram_model = 6
+		gram_model = 7
 
 		self.vocab = set()
 		i = 0
@@ -183,8 +190,8 @@ class Language_Model:
 		# grab our fetures and
 		# train on the input file
 		for u in self.train:
-			# for j in range(2, gram_model+1):
-			u = '🐟'+u+'🐟'
+			for j in range(2, gram_model+1):
+				u = '🐟'+u
 			self.gen_features(u,gram_model)
 			if (i % 10000) == 0:
 				print(i/100000 * 100, "%")
@@ -197,8 +204,16 @@ class Language_Model:
 		# import ipdb; ipdb.set_trace()
 		self.vocab.add('<unk>')
 
+		self.un = dict()
+		for u in self.c_u_dot[2]:
+			# import ipdb; ipdb.set_trace()
+			if u[0] in self.un:
+				self.un[ u[0] ].update(u[1])
+			else:
+				self.un[ u[0] ] = set()
+				self.un[ u[0] ].update(u[1])
 		### find lambda's of phrases
-
+		# import ipdb; ipdb.set_trace()
 		self.test_phrases(gram_model)
 
 		print(sum(self.p_w.values()))
