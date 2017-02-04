@@ -305,6 +305,8 @@ class POS:
             output += word[0] +' '
         if guessed_tag == word[1]:
           correct += 1
+        else:
+          print("Wrong", word[0],guessed_tag, word[1])
         guesses += 1
     print("----------Line 2 for viterbi part3----------")
     print(output)
